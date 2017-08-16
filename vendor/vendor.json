@@ -1,0 +1,12 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "s7N678Fr+o1AefsFqulM50QtIcA=",
+			"path": "github.com/spf13/pflag",
+			"revision": ""
+		}
+	],
+	"rootPath": "github.com/jiangchengzi/mycloud"
+}
