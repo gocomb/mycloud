@@ -8,14 +8,12 @@ import (
 
 func InitApiserver(contaner *restful.Container){
 
-
 	contaner.Filter(Checktoken)
 
 	ws:=new(restful.WebService)
 	RegisterTaskAPI(ws)
 	contaner.Add(ws)
 }
-
 
 func RegisterTaskAPI(ws *restful.WebService){
 	ws.Path("/task").

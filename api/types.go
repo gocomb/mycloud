@@ -6,10 +6,9 @@ import (
 )
 
 type Task struct {
-	TaskID      string       `json:"id,omitempty"`
-	TaskName    string       `json:"task_name,omitempty"`
+	TaskID      string       `json:"-"`
+	TaskName    string       `json:"task_name"`
 	UserID      string       `json:"user_id,omitempty"`
-	UserName    string       `json:"user_name,omitempty"`
 	Description string       `json:"description,omitempty"`
 	Repository  Repository   `json:"repository,omitempty"`
 	Hooks       []Hook       `json:"hook,omitempty"`
@@ -49,18 +48,11 @@ type Repository struct {
 }
 
 type TaskResponse struct {
-	TaskId       string `json:"TaskId,omitempty"`
-	ErrorMessage string `json:"ErrorMessage,omitempty"`
+	TaskId       string `json:"taskId,omitempty"`
+	Message      string `json:"message,omitempty"`
 }
 
 type ErrorInternelResponse struct {
 	ErrorMessage string `json:"message"`
 }
 
-func Parse(from []byte) (to Task,err error){
-	if err = json.Unmarshal(from,&to);err!=nil{
-		glog.Info("error occured when unmarshal taskFlow")
-		return
-	}
-	return
-}

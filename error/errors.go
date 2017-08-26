@@ -1,11 +1,9 @@
 package error
 
 import (
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1"k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"fmt"
+	"github.com/emicklei/go-restful"
 	"net/http"
+	"encoding/json"
 )
 
 // StatusError defines a http error
@@ -256,218 +254,43 @@ func (err *StatusError) Error() string {
 	return err.Message
 }
 
-// 尝试将k8s api返回的错误转成404错误，转换失败则返回nil, false。
-func ConvToNotFoundErr(name, kind string, err error) (*StatusError, bool) {
-	if k8sErr, ok := err.(*k8serrors.StatusError); true == ok && http.StatusNotFound == k8sErr.ErrStatus.Code {
-		return NewNotFoundErr(name, kind), true
+func ErrorBadRequest(r *restful.Response,message string){
+	err := StatusError{
+		Status:StatusFailure,
+		Message:message,
+		Reason:StatusReasonBadRequest,
+		Code:http.StatusBadRequest,
 	}
-	return nil, false
-}
-
-// 尝试将k8s api返回的错误转成403错误，转换失败则返回nil, false。
-func ConvToConflictErr(name, kind string, err error) (*StatusError, bool) {
-	if k8sErr, ok := err.(*k8serrors.StatusError); true == ok &&
-		http.StatusConflict == k8sErr.ErrStatus.Code &&
-		meta_v1.StatusReasonAlreadyExists == k8sErr.ErrStatus.Reason {
-		return NewConflictErr(name, kind, fmt.Errorf("resource already exists")), true
-	}
-	return nil, false
-}
-
-// 尝试将k8s api返回的错误转成超时错误，转换失败则返回nil, false。
-func ConvToTimeoutErr(kind, operation string, err error) (*StatusError, bool) {
-	if k8sErr, ok := err.(*k8serrors.StatusError); true == ok &&
-		http.StatusInternalServerError == k8sErr.ErrStatus.Code &&
-		meta_v1.StatusReasonServerTimeout == k8sErr.ErrStatus.Reason {
-		return NewTimeoutErr(kind, operation, 5), true
-	}
-	return nil, false
-}
-
-func NewSuccessStatus(results interface{}) *StatusError {
-	return &StatusError{
-		Data:   results,
-		Status: StatusSuccess,
-		Code:   http.StatusOK,
-	}
-}
-
-func NewPaymentErr(kind, message string) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusPaymentRequired,
-		Reason: StatusPaymentRequired,
-		Details: &StatusDetails{
-			Kind: kind,
-		},
-		Message: message,
-	}
-}
-
-func NewForbiddenErr(kind, name, message string) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusForbidden,
-		Reason: StatusReasonForbidden,
-		Details: &StatusDetails{
-			Kind: kind,
-			Name: name,
-		},
-		Message: message,
-	}
-}
-func NewLicenseExpireErr(kind string) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusUnavailableForLegalReasons,
-		Reason: StatusLicenseExpire,
-		Details: &StatusDetails{
-			Kind: kind,
-		},
-		Message: "License Expired",
-	}
-}
-
-func NewResourceIsNotEnough(kind, message string, data interface{}) *StatusError {
-	return &StatusError {
-		Status: StatusFailure,
-		Code: http.StatusForbidden,
-		Reason: StatusReasonForbidden,
-		Data: data,
-		Details: &StatusDetails{
-			Kind: kind,
-		},
-		Message: "The cluster resource is not enough",
-	}
+	errString,_ := json.Marshal(&err)
+	r.WriteHeader(http.StatusBadRequest)
+	r.Write([]byte(errString))
+	return
 }
 
 
-func NewNotFoundErr(name, kind string) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusNotFound,
-		Reason: StatusReasonNotFound,
-		Details: &StatusDetails{
-			Kind: kind,
-			Name: name,
-		},
-		Message: fmt.Sprintf("%s %s not found", kind, name),
+func InternalServerError(r *restful.Response,message string){
+	err := StatusError{
+		Status:StatusFailure,
+		Message:message,
+		Reason:StatusReasonInternalError,
+		Code:http.StatusInternalServerError,
 	}
+	errString,_ := json.Marshal(&err)
+	r.WriteHeader(http.StatusInternalServerError)
+	r.Write([]byte(errString))
+	return
 }
 
-func NewBadRequestErr(msg string, details *StatusDetails) *StatusError {
-	return &StatusError{
-		Status:  StatusFailure,
-		Code:    http.StatusBadRequest,
-		Reason:  StatusReasonBadRequest,
-		Message: msg,
-		Details: details,
-	}
-}
 
-func NewUnprocessableErr(msg string, details *StatusDetails) *StatusError {
-	return &StatusError{
-		Status:  StatusFailure,
-		Code:    http.StatusUnprocessableEntity,
-		Reason:  "UnprocessableEntity",
-		Message: msg,
-		Details: details,
+func Forbidden(r *restful.Response,message string){
+	err := StatusError{
+		Status:StatusFailure,
+		Message:message,
+		Reason:StatusReasonForbidden,
+		Code:http.StatusForbidden,
 	}
-}
-
-func NewUnauthorizedErr() *StatusError {
-	message := "not authorized"
-	return &StatusError{
-		Status:  StatusFailure,
-		Code:    http.StatusUnauthorized,
-		Reason:  StatusReasonUnauthorized,
-		Message: message,
-	}
-}
-
-func NewNotAcceptableErr(name, kind string) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusNotAcceptable,
-		Reason: StatusNotAcceptable,
-		Details: &StatusDetails{
-			Kind: kind,
-			Name: name,
-		},
-		Message: fmt.Sprintf("Invalid request for %s %s", kind, name),
-	}
-}
-
-func NewAlreadyExistErr(name, kind string, err error) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusConflict,
-		Reason: StatusReasonAlreadyExists,
-		Details: &StatusDetails{
-			Kind: kind,
-			Name: name,
-		},
-		Message: fmt.Sprintf("Operation cannot be fulfilled on %s %q: %v", kind, name, err),
-	}
-}
-
-func NewConflictErr(name, kind string, err error) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusConflict,
-		Reason: StatusReasonConflict,
-		Details: &StatusDetails{
-			Kind: kind,
-			Name: name,
-		},
-		Message: fmt.Sprintf("Operation cannot be fulfilled on %s %q: %v", kind, name, err),
-	}
-}
-
-func NewPreconditionFailedErr(kind, level, message string) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusPreconditionFailed,
-		Reason: StatusPreconditionFailed,
-		Details: &StatusDetails{
-			Kind:  kind,
-			Level: level,
-		},
-		Message: message,
-	}
-}
-
-func NewInternalErr(err error) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusInternalServerError,
-		Reason: StatusReasonInternalError,
-		Details: &StatusDetails{
-			Causes: []StatusCause{{Message: err.Error()}},
-		},
-		Message: fmt.Sprintf("Internal error occurred: %v", err),
-	}
-}
-
-func NewTimeoutErr(kind, operation string, retryAfterSeconds int) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusInternalServerError,
-		Reason: StatusReasonServerTimeout,
-		Details: &StatusDetails{
-			Kind:              kind,
-			Name:              operation,
-			RetryAfterSeconds: int32(retryAfterSeconds),
-		},
-		Message: fmt.Sprintf("The %s operation against %s could not be completed at this time, please try again.", operation, kind),
-	}
-}
-
-func NewNoRegistryErr(result string) *StatusError {
-	return &StatusError{
-		Status: StatusFailure,
-		Code:   http.StatusNoContent,
-		Reason: StatusNotAcceptable,
-		Message: result,
-	}
+	errString,_ := json.Marshal(&err)
+	r.WriteHeader(http.StatusForbidden)
+	r.Write([]byte(errString))
+	return
 }

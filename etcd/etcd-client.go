@@ -66,9 +66,23 @@ func (ec *Client) CreateDir(dir string) error {
 }
 
 // Set sets value to key in etcd server.
-func (ec *Client) Set(key, value string) error {
+func (ec *Client) Set(key, value string,opts *client.SetOptions) error {
 	kapi := client.NewKeysAPI(ec.client)
-	_, err := kapi.Set(ctx, key, value, nil)
+	_, err := kapi.Set(ctx, key, value, opts)
+	return err
+}
+
+// update sets value to key in etcd server.
+func (ec *Client) Update(key, value string) error {
+	kapi := client.NewKeysAPI(ec.client)
+	_, err := kapi.Update(ctx, key, value)
+	return err
+}
+
+// update sets value to key in etcd server.
+func (ec *Client) Create(key, value string) error {
+	kapi := client.NewKeysAPI(ec.client)
+	_, err := kapi.Create(ctx, key, value)
 	return err
 }
 
