@@ -23,7 +23,13 @@ const (
 	WatchActionCreate string = "create"
 	WatchActionSet    string = "set"
 	WatchActionDelete string = "delete"
+	WatchActionUpdate string = "update"
+	WatchActionUnKnown  string = "unknown"
 )
+
+
+//存放需要处理的task
+const WORKDIR string = `mycloud/tasks`
 
 // Init initializes a client, connected to etcd server.
 func Init(endpoints []string) {

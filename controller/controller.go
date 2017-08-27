@@ -92,7 +92,6 @@ func watchTaskFlow(){
 			if err!=nil{
 				continue
 			}
-			glog.Infoln(node.Node,node.Node.Value)
 			task,err:= api.Parse([]byte(node.Node.Value))
 			if err!=nil{
 				continue
@@ -118,6 +117,14 @@ func handleTasks(taskstatus <-chan queue.Node){
 				glog.Infof("set")
 			case etcd.WatchActionDelete:
 				glog.Infof("delete")
+			default:
+				/*
+					默认分支可能出现在以下情况(可以补充)：
+						1、初始化时同步的状态，可能是由于平台突然间中断、重启等异常情况导致需要重新从etcd加载状态，此时的动作可能已经过期
+						(处于expire)，那么我们需要去读取task的state,
+
+
+				*/
 			}
 		default:
 			time.Sleep(100*time.Millisecond)

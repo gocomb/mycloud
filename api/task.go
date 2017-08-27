@@ -5,17 +5,20 @@ import (
 	"encoding/json"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"fmt"
+	"path/filepath"
 )
 
 func (t *Task) CheckTaskParams() error{
 	if t.TaskName == "" {
-		glog.Infoln("CheckTaskParams","taskName is empty")
-		return errors.New("taskName is empty")
+		errMessage := "taskName is empty"
+		glog.Infoln("CheckTaskParams",errMessage)
+		return errors.New(errMessage)
 	}
-	e := etcd.GetClient()
-	if e.TaskExists(t.TaskName){
-		glog.Infoln("CheckTaskParams","taskName has been existed")
-		return errors.New("taskName has been existed")
+	if t.TaskExists(){
+		errMessage := "taskName has been existed"
+		glog.Infoln("CheckTaskParams",errMessage)
+		return errors.New(errMessage)
 	}
 	//TODO：检查其他项，假如需要的话
 	return nil
@@ -23,8 +26,17 @@ func (t *Task) CheckTaskParams() error{
 
 func (t *Task) Insert() error{
 	e := etcd.GetClient()
-	if err := e.InsertTask(t);err != nil{
-		return err
+	taskKey := filepath.Join(etcd.WORKDIR,t.TaskID)
+	taskValue,err := json.Marshal(t)
+	if err != nil{
+		errMessage := fmt.Sprintf("error occured when marshal task body,error message is:%v",err)
+		glog.Infoln("InsertTask",errMessage)
+		return errors.New(errMessage)
+	}
+	if err := e.Create(taskKey,string(taskValue));err !=nil {
+		errMessage := fmt.Sprintf("error occured when insert task to etcd,error message is:%v",err)
+		glog.Infoln("InsertTask",)
+		return errors.New(errMessage)
 	}
 	return nil
 }
@@ -36,4 +48,19 @@ func Parse(from []byte) (to Task,err error){
 		return
 	}
 	return
+}
+
+
+func (t *Task) TaskExists() bool{
+	e := etcd.GetClient()
+	taskKey :=  filepath.Join(etcd.WORKDIR,t.TaskID)
+	taskValue,err := e.Get(taskKey)
+	if err!=nil{
+		glog.Infoln("IsTaskExists","error occured when check whether task exists")
+		return false
+	}
+	if "" == taskValue{
+		return false
+	}
+	return true
 }

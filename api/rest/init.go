@@ -8,6 +8,7 @@ import (
 
 func InitApiserver(contaner *restful.Container){
 
+	contaner.Filter(PrePare)
 	contaner.Filter(Checktoken)
 
 	ws:=new(restful.WebService)
@@ -23,7 +24,7 @@ func RegisterTaskAPI(ws *restful.WebService){
 	ws.Route(ws.POST("/").
 		Doc("create tasks for given user").
 		To(CreateTask).Reads(api.Task{}).
-		Writes(api.TaskResponse{}))
+		Writes(api.CreateTaskResponse{}))
 }
 
 
